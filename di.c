@@ -35,19 +35,38 @@ void print_min_cost(int id)
 //  Input arguement: (int)id is the id of the source node
 void dijkstra(int id)
 {
-    // Hint: You should refer the distance in table[][] and use the struct Node to implement your algorithm  
-    /* TODO */
+    nodes[id].dist[id] = 0;
+    int i, j, k;
 
+    for (i = 0; i < nodes_num; i++) {
+        int min_distance = infinity;
+        int min_index = -1;
 
+        for (j = 0; j < nodes_num; j++) {
+            if (!nodes[id].visit[j] && nodes[id].dist[j] < min_distance) {
+                min_distance = nodes[id].dist[j];
+                min_index = j;
+            }
+        }
+
+        nodes[id].visit[min_index] = 1;
+
+        for (k = 0; k < nodes_num; k++) {
+            if (!nodes[id].visit[k] && table[min_index][k] != infinity && nodes[id].dist[min_index] + table[min_index][k] < nodes[id].dist[k]) {
+                nodes[id].dist[k] = nodes[id].dist[min_index] + table[min_index][k];
+            }
+        }
+    }
 }
 
 // Initialize 
 void init()
 {
     // Initialize nodes' distance to infinity and visit to 0
-    for (int i = 0; i < 4; i++)
+    int i, j;
+    for (i = 0; i < 4; i++)
     {
-        for (int j = 0; j < 4; j++)
+        for (j = 0; j < 4; j++)
         {
             nodes[i].dist[j] = infinity;
             nodes[i].visit[j] = 0;
@@ -55,9 +74,9 @@ void init()
     }
 
     // Initialize the distance table
-    for (int i = 0; i < 4; i++)
+    for (i = 0; i < 4; i++)
     {
-        for (int j = 0; j < 4; j++)
+        for (j = 0; j < 4; j++)
         {
             table[i][j] = infinity;
         }

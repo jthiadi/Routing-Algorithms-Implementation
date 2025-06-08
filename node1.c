@@ -2,29 +2,27 @@
 
 struct rtpkt {
   int sourceid;       /* id of sending router sending this pkt */
-  int destid;         /* id of router to which pkt being sent 
+  int destid;         /* id of router to which pkt being sent
                          (must be an immediate neighbor) */
   int mincost[4];    /* min cost to node 0 ... 3 */
   };
-
-
+  
+int neighbor1[4] = {0};
+struct rtpkt default1;
 extern int TRACE;
 extern int YES;
 extern int NO;
 extern void tolayer2(struct rtpkt packet);
 
-struct distance_table 
+struct distance_table
 {
   int costs[4][4];
 } dt1;
 
 
-/* students to write the following two routines, and maybe some others */
-
-
 extern void read1(FILE *file)
 {
-
+  //  Initialize distance_table to 999
   for (int i = 0; i < 4; i++)
   {
     for (int j = 0; j < 4; j++)
@@ -43,15 +41,55 @@ extern void read1(FILE *file)
 
 extern void rtinit1()
 {
-  /* TODO */
+	int i;
+	struct rtpkt send;
+      	send.sourceid = 1;
+      	default1.sourceid = 1;
+
+      	for(i = 0; i < 4; i++){
+        	send.mincost[i] = dt1.costs[i][i];
+        	default1.mincost[i] = dt1.costs[i][i];
+          	if(i == 0 || i == 2)neighbor1[i] = 1;
+      	}
+      
+	for(i = 0; i < 4; i++) {
+        	if(neighbor1[i]) {;
+        		send.destid = i;
+        		tolayer2(send);
+		}
+      	}
 }
 
 extern void rtupdate1(struct rtpkt *rcvdpkt)
 {
-  /* TODO */
+    	int src = rcvdpkt->sourceid;
+      	int distance = dt1.costs[src][src];
+     	int i, j;
+	int min_cost;
+
+	if(distance == 999) return;
+      	for(i = 0; i < 4; i++){
+          	if(dt1.costs[i][src] != rcvdpkt->mincost[i] + distance){
+              		dt1.costs[i][src] = rcvdpkt->mincost[i] + distance;
+              		min_cost = dt1.costs[i][i];
+              	
+			for(j = 0;j < 4; j++) {
+            			min_cost = min_cost > dt1.costs[i][j] ? dt1.costs[i][j] : min_cost;
+              		}
+              		
+			default1.mincost[i] = min_cost;
+              		
+			for(j = 0; j < 4; j++) {
+                		if(neighbor1[j]) {;
+                			default1.destid = j;
+                			tolayer2(default1);
+				}
+              		}
+      		}
+  	}
 }
 
-void printdt1(void)  
+void printdt1(void)
 {
   struct distance_table *dtptr = &dt1;
 
@@ -70,46 +108,15 @@ extern void linkhandler1(int linkid, int newcost)
 /* to use this routine, you'll need to change the value of the LINKCHANGE */
 /* constant definition in prog3.c from 0 to 1 */
 {
-  int old_value[4];
-
-  for (int i = 0; i < 4; i++)
-  {
-    old_value[i] = dt1.costs[i][linkid] - dt1.costs[linkid][linkid];
-  }
-
-  // change node 1
-  dt1.costs[linkid][linkid] = newcost;
-
-  for (int i = 0; i < 4; i++)
-  {
-    dt1.costs[i][linkid] = old_value[i] + newcost;
-  }
-
-  for (int i = 0; i < 4; i++)
-  {
-    if (i != 3 && i != 1)
-    {
-      struct rtpkt r;
-      r.sourceid = 1;
-      r.destid = i;
-      for (int j = 0; j < 4; j++)
-      {
-        int min = dt1.costs[j][j];
-        for (int k = 0; k < 4; k++)
-        {
-          if (k != i)
-          {
-            min = min > dt1.costs[j][k] ? dt1.costs[j][k] : min;
-          }
-        }
-        r.mincost[j] = min;
-      }
-
-      tolayer2(r);
-    }
-  }
-
-  // printdt1();
+	int i;
+    	default1.mincost[linkid] = newcost;
+      	dt1.costs[linkid][linkid] = newcost;
+    	for(i = 0; i < 4; i++) {
+    		if(neighbor1[i]) {
+    			default1.destid = i;
+    			tolayer2(default1);
+			}
+  	}
 }
 
 extern void print_min_cost1()
@@ -131,3 +138,4 @@ extern void print_min_cost1()
   printf("Min cost %d : %d %d %d %d\n", 1, min_cost[0], min_cost[1],
          min_cost[2], min_cost[3]);
 }
+
